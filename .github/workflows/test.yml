@@ -1,0 +1,12 @@
+name: PowerShell 5.1 checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run focused tests
+        shell: powershell
+        run: ./tests/Verify.ps1

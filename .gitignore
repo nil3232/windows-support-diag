@@ -1,0 +1,7 @@
+*.zip
+*.evtx
+*.csv
+*.previous
+*.tmp
+test-output/
+Runs/
