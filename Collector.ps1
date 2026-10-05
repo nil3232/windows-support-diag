@@ -128,7 +128,7 @@ $boot=(Get-CimInstance Win32_OperatingSystem -OperationTimeoutSec 5).LastBootUpT
 $recovered=($boot -ne $state.OriginalBootUTC)
 if ($Finalize) {
     $task=Get-ScheduledTask -TaskName $TaskName -ErrorAction SilentlyContinue
-    if ($task -and $task.State -eq 'Running') { throw 'Collector is running. Use the STOP file; do not finalize concurrently.' }
+    if ($task -and [string]$task.State -in @('Running','Queued')) { throw 'Collector is running or queued. Use the STOP file; do not finalize concurrently.' }
 }
 $succeeded=$false
 function Capture([string]$Name,[scriptblock]$Code) {

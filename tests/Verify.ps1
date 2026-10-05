@@ -5,11 +5,12 @@ foreach($name in 'Collector.ps1','SupportDiag.ps1') {
     $tokens=$null; $errors=$null
     $ast=[Management.Automation.Language.Parser]::ParseFile((Join-Path $root $name),[ref]$tokens,[ref]$errors)
     if ($errors.Count) { throw ($errors | Out-String) }
-    if ($name -eq 'Collector.ps1') {
+    if ($name -eq 'Collector.ps1' -or $name -eq 'SupportDiag.ps1') {
         foreach($function in $ast.FindAll({param($node) $node -is [Management.Automation.Language.FunctionDefinitionAst]},$false)) { . ([scriptblock]::Create($function.Extent.Text)) }
     }
 }
 $OutputRoot=Join-Path $root ('test-output\'+[guid]::NewGuid().ToString('N'))
+if (-not (Test-TaskActive ([pscustomobject]@{State='Running'})) -or -not (Test-TaskActive ([pscustomobject]@{State='Queued'})) -or (Test-TaskActive ([pscustomobject]@{State='Ready'})) -or (Test-TaskActive $null)) { throw 'Task lifecycle guard failed.' }
 New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
 $SampleSeconds=10; $EventSeconds=120; $recovered=$false
 $state=[pscustomobject]@{StartUTC=[datetime]::UtcNow.ToString('o')}

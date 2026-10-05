@@ -4,7 +4,7 @@
 
 ## Запуск на 60 минут
 
-Откройте **Windows PowerShell от администратора** на проверяемом сервере:
+Откройте **Windows PowerShell от администратора** на проверяемом сервере. Вставьте следующую строку целиком — отдельно скачивать файлы не нужно:
 
 ```powershell
 $p="$env:TEMP\SupportDiag.ps1"; [Net.ServicePointManager]::SecurityProtocol=[Net.ServicePointManager]::SecurityProtocol -bor [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest 'https://raw.githubusercontent.com/nil3232/windows-support-diag/main/SupportDiag.ps1' -UseBasicParsing -OutFile $p -ErrorAction Stop; powershell.exe -NoProfile -ExecutionPolicy Bypass -File $p -Minutes 60
@@ -19,7 +19,7 @@ $p="$env:TEMP\SupportDiag.ps1"; [Net.ServicePointManager]::SecurityProtocol=[Net
 После завершения:
 
 ```powershell
-& 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Action Collect
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Action Collect
 ```
 
 Команда покажет полный путь к архиву `C:\ProgramData\WindowsSupportDiag\Report-<server>-<run>.zip`. Скопируйте ZIP на свой компьютер. Сборщик ничего не отправляет по сети.
@@ -27,8 +27,8 @@ $p="$env:TEMP\SupportDiag.ps1"; [Net.ServicePointManager]::SecurityProtocol=[Net
 Статус и досрочное завершение:
 
 ```powershell
-& 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Action Status
-& 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Action Stop
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Action Status
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Action Stop
 ```
 
 `Collect` не прерывает активный сбор. `Stop` завершает его и получает архив. При необходимости можно указать `-Run 'полный путь к конкретной папке'` и `-Destination 'C:\Temp\Report.zip'`. По умолчанию выбирается последняя папка запуска.
@@ -38,7 +38,7 @@ $p="$env:TEMP\SupportDiag.ps1"; [Net.ServicePointManager]::SecurityProtocol=[Net
 В команде загрузки замените `-Minutes 60` на `-DownloadOnly`. Затем на том же сервере:
 
 ```powershell
-& 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Offline -Minutes 120
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File 'C:\ProgramData\WindowsSupportDiag\SupportDiag.ps1' -Offline -Minutes 120
 ```
 
 Для переноса на сервер без интернета скачайте файлы `SupportDiag.ps1`, `Collector.ps1`, `manifest.json`. Разместите все три файла в одной папке, например `C:\Temp\SupportDiag`, затем выполните:

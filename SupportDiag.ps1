@@ -32,6 +32,9 @@ function Get-TaskForRun($Directory) {
     if ($state.TaskName -notlike 'WindowsSupportDiag-*') { throw 'Unexpected task name.' }
     Get-ScheduledTask -TaskName $state.TaskName -ErrorAction SilentlyContinue
 }
+function Test-TaskActive($Task) {
+    $null -ne $Task -and [string]$Task.State -in @('Running','Queued')
+}
 function Install-Collector {
     $tools=Join-Path $Root 'Tools\v1.0.0'
     New-Item -ItemType Directory -Path $Root -Force | Out-Null
@@ -71,21 +74,22 @@ function Install-Collector {
     $collector
 }
 if ($Action -eq 'Start' -or $DownloadOnly) {
+    if ($Run) { throw '-Run selects an existing report. Do not use it with Start or DownloadOnly.' }
     $collector=Install-Collector
-    if ($DownloadOnly) { Write-Host "Downloaded and checked. Offline launch: & '$Root\SupportDiag.ps1' -Offline -Minutes $Minutes"; return }
+    if ($DownloadOnly) { Write-Host "Downloaded and checked. Offline launch: powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$Root\SupportDiag.ps1`" -Offline -Minutes $Minutes"; return }
     & $collector -Start -Minutes $Minutes -SampleSeconds $SampleSeconds -EventSeconds $EventSeconds -OutputRoot (Join-Path $Root 'Runs')
     $directory=Get-RunDirectory
     $waitUntil=(Get-Date).AddMinutes(2)
     while (-not (Test-Path -LiteralPath (Join-Path $directory.FullName 'READY.txt'))) {
         $task=Get-TaskForRun $directory
-        if (-not $task -or $task.State -ne 'Running' -or (Get-Date) -gt $waitUntil) {
+        if (-not $task -or (Get-Date) -gt $waitUntil) {
             Write-Warning "READY not confirmed yet. Check Status and errors.txt in $($directory.FullName)."
             return
         }
         Start-Sleep -Seconds 2
     }
     Write-Host 'READY: collection is independent of this PowerShell window and RDP session.'
-    Write-Host "Get report later: & '$Root\SupportDiag.ps1' -Action Collect"
+    Write-Host "Get report later: powershell.exe -NoProfile -ExecutionPolicy Bypass -File `"$Root\SupportDiag.ps1`" -Action Collect"
     return
 }
 $directory=Get-RunDirectory
@@ -98,14 +102,14 @@ if ($Action -eq 'Status') {
 }
 # Collect returns only a finished archive; Stop requests an early finish.
 if ($Action -eq 'Stop') { New-Item -ItemType File -Path (Join-Path $directory.FullName 'STOP') -Force | Out-Null }
-if ($task -and $task.State -eq 'Running') {
+if (Test-TaskActive $task) {
     if ($Action -eq 'Collect') { throw 'Collection is still running. Wait for completion or use -Action Stop.' }
     $deadline=(Get-Date).AddMinutes(5)
     do {
         Start-Sleep -Seconds 2
         $task=Get-TaskForRun $directory
-    } while ($task -and $task.State -eq 'Running' -and (Get-Date) -lt $deadline)
-    if ($task -and $task.State -eq 'Running') { throw 'Collector is still finishing. Run Collect later; saved files are retained.' }
+    } while ((Test-TaskActive $task) -and (Get-Date) -lt $deadline)
+    if (Test-TaskActive $task) { throw 'Collector is still finishing. Run Collect later; saved files are retained.' }
 }
 if (-not (Test-Path -LiteralPath (Join-Path $directory.FullName 'COMPLETE.txt'))) {
     & (Join-Path $directory.FullName 'Collector.ps1') -Finalize -OutputRoot $directory.FullName
